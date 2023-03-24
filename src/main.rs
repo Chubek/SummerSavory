@@ -89,45 +89,63 @@ macro_rules! threshold {
     }};
 }
 
+macro_rules! get_2d_index {
+    ($x: expr, $y: expr, $widthorheight: ident) => {
+        (($widthorheight * ($y)) + ($x))
+    };
+    ($x: ident, $y: expr, $widthorheight: ident) => {
+        (($widthorheight * ($y)) + ($x))
+    };
+    ($x: expr, $y: ident, $widthorheight: ident) => {
+        (($widthorheight * ($y)) + ($x))
+    };
+    ($x: expr, $y: ident, $widthorheight: ident) => {
+        (($widthorheight * ($y)) + ($x))
+    };
+    ($x: ident, $y: ident, $widthorheight: ident) => {
+        (($widthorheight * ($y)) + ($x))
+    };
+}
+
 macro_rules! get_pixel {
-    ($arr: ident, $x: expr, $y: expr, $width: ident) => {
-        $arr[($width * ($y)) + ($x)]
+    ($arr: ident, $x: expr, $y: expr, $widthorheight: ident) => {
+        $arr[get_2d_index!($x, $y, $widthorheight)]
     };
-    ($arr: ident, $x: ident, $y: ident, $width: ident) => {
-        $arr[($width * ($y)) + ($x)]
+    ($arr: ident, $x: ident, $y: ident, $widthorheight: ident) => {
+        $arr[get_2d_index!($x, $y, $widthorheight)]
     };
-    ($arr: ident, $x: ident, $y: expr, $width: ident) => {
-        $arr[($width * ($y)) + ($x)]
+    ($arr: ident, $x: ident, $y: expr, $widthorheight: ident) => {
+        $arr[get_2d_index!($x, $y, $widthorheight)]
     };
-    ($arr: ident, $x: ident, $y: ident, $width: ident) => {
-        $arr[($width * ($y)) + ($x)]
+    ($arr: ident, $x: ident, $y: ident, $widthorheight: ident) => {
+        $arr[get_2d_index!($x, $y, $widthorheight)]
     };
 }
 
 macro_rules! set_pixel {
-    ($arr: ident, $x: expr, $y: expr, $width: ident, $val: ident) => {{
-        $arr[($width * ($y)) + ($x)] = $val;
+    ($arr: ident, $x: expr, $y: expr, $widthorheight: ident, $val: ident) => {{
+        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
     }};
-    ($arr: ident, $x: ident, $y: ident, $width: ident, $val: ident) => {{
-        $arr[($width * ($y)) + ($x)] = $val;
+    ($arr: ident, $x: ident, $y: ident, $widthorheight: ident, $val: ident) => {{
+        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
     }};
-    ($arr: ident, $x: expr, $y: ident, $width: ident, $val: ident) => {{
-        $arr[($width * ($y)) + ($x)] = $val;
+    ($arr: ident, $x: expr, $y: ident, $widthorheight: ident, $val: ident) => {{
+        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
     }};
-    ($arr: ident, $x: ident, $y: expr, $width: ident, $val: ident) => {{
-        $arr[($width * ($y)) + ($x)] = $val;
+    ($arr: ident, $x: ident, $y: expr, $widthorheight: ident, $val: ident) => {{
+        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
     }};
-    ($arr: ident, $x: expr, $y: expr, $width: ident, $val: expr) => {{
-        $arr[($width * ($y)) + ($x)] = $val;
+    ($arr: ident, $x: expr, $y: expr, $widthorheight: ident, $val: expr) => {{
+        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
     }};
-    ($arr: ident, $x: ident, $y: ident, $width: ident, $val: expr) => {{
-        $arr[($width * ($y)) + ($x)] = $val;
+    ($arr: ident, $x: ident, $y: ident, $widthorheight: ident, $val: expr) => {{
+        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
     }};
-    ($arr: ident, $x: expr, $y: ident, $width: ident, $val: expr) => {{
-        $arr[($width * ($y)) + ($x)] = $val;
+    ($arr: ident, $x: expr, $y: ident, $widthorheight: ident, $val: expr) => {{
+        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
     }};
-    ($arr: ident, $x: ident, $y: expr, $width: ident, $val: expr) => {{
-        $arr[($width * ($y)) + ($x)] = $val;
+    ($arr: ident, $x: ident, $y: expr, $widthorheight: ident, $val: expr) => {{
+        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
     }};
 }
 
@@ -147,6 +165,41 @@ macro_rules! float_proportion {
     ($i: ident, $old_propo: ident, $new_propo: ident) => {
         ($i as f64) * (($old_propo as f64) - 1.0) / $new_propo as f64
     };
+}
+
+macro_rules! get_pixel_range {
+    ($img: ident, $x1: ident, $x2: ident, $y1: ident, $y2: ident, $widthorheight: ident) => {{
+        ($x1..$x2)
+            .collect::<Vec<usize>>()
+            .iter()
+            .cloned()
+            .map(|i| {
+                ($y1..$y2)
+                    .collect::<Vec<usize>>()
+                    .iter()
+                    .cloned()
+                    .map(|j| $img[get_2d_index!(j, i, $widthorheight)])
+                    .collect::<Vec<u8>>()
+            })
+            .flatten()
+            .collect()
+    }};
+    ($img: ident, $outerrange: expr, $innerrange: expr, $widthorheight: ident) => {{
+        (0..$outerrange)
+            .collect::<Vec<usize>>()
+            .iter()
+            .cloned()
+            .map(|i| {
+                (0..$innerrange)
+                    .collect::<Vec<usize>>()
+                    .iter()
+                    .cloned()
+                    .map(|j| $img[get_2d_index!(j, i, $widthorheight)])
+                    .collect::<Vec<u8>>()
+            })
+            .flatten()
+            .collect()
+    }};
 }
 
 fn read_image(path: &str) -> (Vec<u8>, (usize, usize)) {
@@ -445,6 +498,31 @@ fn scale_image(
     (scaled, (new_width, new_height))
 }
 
+fn crop_image(
+    img: &Vec<u8>,
+    width: usize,
+    x1y1: (usize, usize),
+    x2y2: (usize, usize),
+) -> (Vec<u8>, (usize, usize)) {
+    let ((x1, y1), (x2, y2)) = (x1y1, x2y2);
+    err_out_if_false!(
+        x1 < x2,
+        "Cannot crop backwards. X1({}) must be smaller than X2({})",
+        x1,
+        x2
+    );
+
+    let (new_width, new_hight) = (x2 - x1, y2 - y1);
+    let cropped = get_pixel_range! {
+        img,
+        x1, x2,
+        y1, y2,
+        width
+    };
+
+    return (cropped, (new_width, new_hight));
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let imagepath = &args[1];
@@ -463,5 +541,8 @@ fn main() {
     let (nx, ny, tmin, tmax, sigma) = (width as usize, height as usize, 45, 50, 1.0);
     let canny_edges = canny_edge_detector(&binrarized, nx, ny, tmin, tmax, sigma, true);
     let (scaled, (nw, nh)) = scale_image(&canny_edges, width, height, 1.9);
+    println!("{} {}", nw, nh);
     write_image("resized.png", nw, nh, &scaled);
+    let (cropped, (nww, nhh)) = crop_image(&scaled, nh, (200, 300), (500, 600));
+    write_image("cropped.png", nww, nhh, &cropped);
 }
