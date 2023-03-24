@@ -1,4 +1,4 @@
-use std::{f64::consts::PI, fs::File, io::BufWriter, path::Path};
+use std::{f64::consts::PI, fs::File, io::BufWriter, path::Path, vec};
 
 type Pixel = i16;
 
@@ -65,33 +65,108 @@ macro_rules! to_luma {
     };
 }
 
-macro_rules! threshold {
-    ($pixel: expr, $thresh: ident, $gte: literal, $lt: literal) => {
-        if $pixel >= $thresh {
-            $gte
-        } else {
-            $lt
-        }
+macro_rules! thresh_factor {
+    ($pixel: expr) => {
+        ($pixel & (!((i8::MAX as u8) & u8::MAX) & u8::MAX))
+    };
+    ($pixel: ident) => {
+        ($pixel & (!((i8::MAX as u8) & u8::MAX) & u8::MAX))
     };
 }
 
-fn read_image(path: &str) -> (Vec<u8>, (u32, u32)) {
+macro_rules! rotl_one {
+    ($factor: expr) => {
+        (($factor << 1) | ($factor >> (u8::BITS - 1)))
+    };
+    ($factor: ident) => {
+        (($factor << 1) | ($factor >> (u8::BITS - 1)))
+    };
+}
+
+macro_rules! threshold {
+    ($pixel: expr) => {{
+        (thresh_factor!($pixel) | (rotl_one!(thresh_factor!($pixel)) * u8::MAX))
+    }};
+}
+
+macro_rules! get_pixel {
+    ($arr: ident, $x: expr, $y: expr, $width: ident) => {
+        $arr[($width * ($y)) + ($x)]
+    };
+    ($arr: ident, $x: ident, $y: ident, $width: ident) => {
+        $arr[($width * ($y)) + ($x)]
+    };
+    ($arr: ident, $x: ident, $y: expr, $width: ident) => {
+        $arr[($width * ($y)) + ($x)]
+    };
+    ($arr: ident, $x: ident, $y: ident, $width: ident) => {
+        $arr[($width * ($y)) + ($x)]
+    };
+}
+
+macro_rules! set_pixel {
+    ($arr: ident, $x: expr, $y: expr, $width: ident, $val: ident) => {{
+        $arr[($width * ($y)) + ($x)] = $val;
+    }};
+    ($arr: ident, $x: ident, $y: ident, $width: ident, $val: ident) => {{
+        $arr[($width * ($y)) + ($x)] = $val;
+    }};
+    ($arr: ident, $x: expr, $y: ident, $width: ident, $val: ident) => {{
+        $arr[($width * ($y)) + ($x)] = $val;
+    }};
+    ($arr: ident, $x: ident, $y: expr, $width: ident, $val: ident) => {{
+        $arr[($width * ($y)) + ($x)] = $val;
+    }};
+    ($arr: ident, $x: expr, $y: expr, $width: ident, $val: expr) => {{
+        $arr[($width * ($y)) + ($x)] = $val;
+    }};
+    ($arr: ident, $x: ident, $y: ident, $width: ident, $val: expr) => {{
+        $arr[($width * ($y)) + ($x)] = $val;
+    }};
+    ($arr: ident, $x: expr, $y: ident, $width: ident, $val: expr) => {{
+        $arr[($width * ($y)) + ($x)] = $val;
+    }};
+    ($arr: ident, $x: ident, $y: expr, $width: ident, $val: expr) => {{
+        $arr[($width * ($y)) + ($x)] = $val;
+    }};
+}
+
+macro_rules! lerp {
+    ($s: expr, $e: expr, $t: expr) => {
+        ($s + ($e - $s) * $t)
+    };
+}
+
+macro_rules! blerp {
+    ($c00: expr, $c10: expr, $c01: expr, $c11: expr, $tx: ident, $ty: ident) => {
+        threshold!((lerp!(lerp!($c00, $c10, $tx), lerp!($c01, $c11, $tx), $ty)).round() as u8)
+    };
+}
+
+macro_rules! float_proportion {
+    ($i: ident, $old_propo: ident, $new_propo: ident) => {
+        ($i as f64) * (($old_propo as f64) - 1.0) / $new_propo as f64
+    };
+}
+
+fn read_image(path: &str) -> (Vec<u8>, (usize, usize)) {
     let data = err_out_res!(File::open(path), "Error opening image file");
     let decoder = png::Decoder::new(data);
     let mut reader = decoder.read_info().unwrap();
-    let size = reader.info().size();
     let mut buf = vec![0; reader.output_buffer_size()];
     let info = reader.next_frame(&mut buf).unwrap();
     let bytes = &buf[..info.buffer_size()];
-    (bytes.to_vec(), size)
+
+    let size = reader.info().size();
+    (bytes.to_vec(), (size.0 as usize, size.1 as usize))
 }
 
-fn write_image(path: &str, width: u32, height: u32, data: &[u8]) {
+fn write_image(path: &str, width: usize, height: usize, data: &[u8]) {
     let path = Path::new(path);
     let file = File::create(path).unwrap();
     let ref mut w = BufWriter::new(file);
 
-    let mut encoder = png::Encoder::new(w, width, height);
+    let mut encoder = png::Encoder::new(w, width as u32, height as u32);
     encoder.set_color(png::ColorType::Grayscale);
     encoder.set_depth(png::BitDepth::Eight);
     let mut writer = encoder.write_header().unwrap();
@@ -114,11 +189,8 @@ fn rgba_buffer_to_grayscale(buffer: &Vec<u8>) -> Vec<u8> {
         .collect::<Vec<u8>>()
 }
 
-fn binarize_grayscale_buffer(buffer: &Vec<u8>, thresh: u8) -> Vec<u8> {
-    buffer
-        .into_iter()
-        .map(|p| threshold!(*p, thresh, 255, 0))
-        .collect()
+fn binarize_grayscale_buffer(buffer: &Vec<u8>) -> Vec<u8> {
+    buffer.into_iter().map(|p| threshold!(*p)).collect()
 }
 
 fn convolution(
@@ -333,6 +405,46 @@ fn canny_edge_detector(
     output.into_iter().map(|p| p as u8).collect()
 }
 
+fn scale_image(
+    img: &Vec<u8>,
+    width: usize,
+    height: usize,
+    scale: f64,
+) -> (Vec<u8>, (usize, usize)) {
+    let (new_width, new_height) = (
+        (width as f64 * scale).round() as usize,
+        (height as f64 * scale).round() as usize,
+    );
+    let mut scaled = vec![0u8; new_width * new_height];
+
+    for x in 0..new_width {
+        for y in 0..new_height {
+            let (gx, gy) = (
+                float_proportion!(x, width, new_width),
+                float_proportion!(y, height, new_height),
+            );
+            let (gxu, gyu) = (gx as usize, gy as usize);
+            let (gxf, gyf) = (gx - (gxu as f64), gy - (gyu as f64));
+            set_pixel! {
+                scaled,
+                x,
+                y,
+                new_width,
+                blerp!{
+                    get_pixel!(img, gxu, gyu, width) as f64,
+                    get_pixel!(img, gxu + 1, gyu, width) as f64,
+                    get_pixel!(img, gxu, gyu + 1, width) as f64,
+                    get_pixel!(img, gxu + 1, gyu + 1, width) as f64,
+                    gxf,
+                    gyf
+                }
+            };
+        }
+    }
+
+    (scaled, (new_width, new_height))
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let imagepath = &args[1];
@@ -343,16 +455,13 @@ fn main() {
     //let tmax = args[6].parse::<i16>().expect("Error parsing threshold");
     //let sigma = args[6].parse::<f64>().expect("Error parsing threshold");
 
-    let thresh = 125;
     // let savepath  = &args[2];
 
     let (image, (width, height)) = read_image(imagepath);
-
     let grayscaled = rgba_buffer_to_grayscale(&image);
-    write_image("gs.png", width, height, &grayscaled);
-    let binrarized = binarize_grayscale_buffer(&grayscaled, thresh);
-    write_image("bin.png", width, height, &binrarized);
+    let binrarized = binarize_grayscale_buffer(&grayscaled);
     let (nx, ny, tmin, tmax, sigma) = (width as usize, height as usize, 45, 50, 1.0);
     let canny_edges = canny_edge_detector(&binrarized, nx, ny, tmin, tmax, sigma, true);
-    write_image("fin.png", width, height, &canny_edges);
+    let (scaled, (nw, nh)) = scale_image(&canny_edges, width, height, 1.9);
+    write_image("resized.png", nw, nh, &scaled);
 }
