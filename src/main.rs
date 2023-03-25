@@ -8,6 +8,9 @@ const LUM_FACTOR_BLUE: f64 = 0.0722;
 const CONVOLUTE_GN: isize = 3;
 const MAX_BRIGHTNESS_F64: f64 = 255.00;
 const MAX_BRIGHTNESS_I16: Pixel = 255;
+const HALF_BRIGHTNESS: u8 = 127;
+const MAX_GRID_SIZE: usize = 100;
+const MIN_GRID_SIZE: usize = 20;
 const NMS_ARCTANS: [f64; 4] = [1.0, 3.0, 5.0, 7.0];
 const KERNEL_GX: [f64; 9] = [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0];
 const KERNEL_GY: [f64; 9] = [1.0, 2.0, 1.0, 0.0, 0.0, 0.0, -1.0, -2.0, -1.0];
@@ -90,62 +93,65 @@ macro_rules! threshold {
 }
 
 macro_rules! get_2d_index {
-    ($x: expr, $y: expr, $widthorheight: ident) => {
-        (($widthorheight * ($y)) + ($x))
+    ($x: expr, $y: expr, $width: ident) => {
+        (($width * ($y)) + ($x))
     };
-    ($x: ident, $y: expr, $widthorheight: ident) => {
-        (($widthorheight * ($y)) + ($x))
+    ($x: ident, $y: expr, $width: ident) => {
+        (($width * ($y)) + ($x))
     };
-    ($x: expr, $y: ident, $widthorheight: ident) => {
-        (($widthorheight * ($y)) + ($x))
+    ($x: expr, $y: ident, $width: ident) => {
+        (($width * ($y)) + ($x))
     };
-    ($x: expr, $y: ident, $widthorheight: ident) => {
-        (($widthorheight * ($y)) + ($x))
+    ($x: expr, $y: ident, $width: ident) => {
+        (($width * ($y)) + ($x))
     };
-    ($x: ident, $y: ident, $widthorheight: ident) => {
-        (($widthorheight * ($y)) + ($x))
+    ($x: ident, $y: ident, $width: ident) => {
+        (($width * ($y)) + ($x))
+    };
+    ($x: literal, $y: literal, $width: literal) => {
+        (($width * ($y)) + ($x))
     };
 }
 
 macro_rules! get_pixel {
-    ($arr: ident, $x: expr, $y: expr, $widthorheight: ident) => {
-        $arr[get_2d_index!($x, $y, $widthorheight)]
+    ($arr: ident, $x: expr, $y: expr, $width: ident) => {
+        $arr[get_2d_index!($x, $y, $width)]
     };
-    ($arr: ident, $x: ident, $y: ident, $widthorheight: ident) => {
-        $arr[get_2d_index!($x, $y, $widthorheight)]
+    ($arr: ident, $x: ident, $y: ident, $width: ident) => {
+        $arr[get_2d_index!($x, $y, $width)]
     };
-    ($arr: ident, $x: ident, $y: expr, $widthorheight: ident) => {
-        $arr[get_2d_index!($x, $y, $widthorheight)]
+    ($arr: ident, $x: ident, $y: expr, $width: ident) => {
+        $arr[get_2d_index!($x, $y, $width)]
     };
-    ($arr: ident, $x: ident, $y: ident, $widthorheight: ident) => {
-        $arr[get_2d_index!($x, $y, $widthorheight)]
+    ($arr: ident, $x: ident, $y: ident, $width: ident) => {
+        $arr[get_2d_index!($x, $y, $width)]
     };
 }
 
 macro_rules! set_pixel {
-    ($arr: ident, $x: expr, $y: expr, $widthorheight: ident, $val: ident) => {{
-        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
+    ($arr: ident, $x: expr, $y: expr, $width: ident, $val: ident) => {{
+        $arr[get_2d_index!($x, $y, $width)] = $val;
     }};
-    ($arr: ident, $x: ident, $y: ident, $widthorheight: ident, $val: ident) => {{
-        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
+    ($arr: ident, $x: ident, $y: ident, $width: ident, $val: ident) => {{
+        $arr[get_2d_index!($x, $y, $width)] = $val;
     }};
-    ($arr: ident, $x: expr, $y: ident, $widthorheight: ident, $val: ident) => {{
-        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
+    ($arr: ident, $x: expr, $y: ident, $width: ident, $val: ident) => {{
+        $arr[get_2d_index!($x, $y, $width)] = $val;
     }};
-    ($arr: ident, $x: ident, $y: expr, $widthorheight: ident, $val: ident) => {{
-        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
+    ($arr: ident, $x: ident, $y: expr, $width: ident, $val: ident) => {{
+        $arr[get_2d_index!($x, $y, $width)] = $val;
     }};
-    ($arr: ident, $x: expr, $y: expr, $widthorheight: ident, $val: expr) => {{
-        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
+    ($arr: ident, $x: expr, $y: expr, $width: ident, $val: expr) => {{
+        $arr[get_2d_index!($x, $y, $width)] = $val;
     }};
-    ($arr: ident, $x: ident, $y: ident, $widthorheight: ident, $val: expr) => {{
-        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
+    ($arr: ident, $x: ident, $y: ident, $width: ident, $val: expr) => {{
+        $arr[get_2d_index!($x, $y, $width)] = $val;
     }};
-    ($arr: ident, $x: expr, $y: ident, $widthorheight: ident, $val: expr) => {{
-        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
+    ($arr: ident, $x: expr, $y: ident, $width: ident, $val: expr) => {{
+        $arr[get_2d_index!($x, $y, $width)] = $val;
     }};
-    ($arr: ident, $x: ident, $y: expr, $widthorheight: ident, $val: expr) => {{
-        $arr[get_2d_index!($x, $y, $widthorheight)] = $val;
+    ($arr: ident, $x: ident, $y: expr, $width: ident, $val: expr) => {{
+        $arr[get_2d_index!($x, $y, $width)] = $val;
     }};
 }
 
@@ -168,7 +174,7 @@ macro_rules! float_proportion {
 }
 
 macro_rules! get_pixel_range {
-    ($img: ident, $x1: ident, $x2: ident, $y1: ident, $y2: ident, $widthorheight: ident) => {{
+    ($img: ident, $x1: ident, $x2: ident, $y1: ident, $y2: ident, $width: ident) => {{
         ($x1..$x2)
             .collect::<Vec<usize>>()
             .iter()
@@ -178,13 +184,13 @@ macro_rules! get_pixel_range {
                     .collect::<Vec<usize>>()
                     .iter()
                     .cloned()
-                    .map(|j| $img[get_2d_index!(j, i, $widthorheight)])
+                    .map(|j| $img[get_2d_index!(j, i, $width)])
                     .collect::<Vec<u8>>()
             })
             .flatten()
             .collect()
     }};
-    ($img: ident, $outerrange: expr, $innerrange: expr, $widthorheight: ident) => {{
+    ($img: ident, $outerrange: expr, $innerrange: expr, $width: ident) => {{
         (0..$outerrange)
             .collect::<Vec<usize>>()
             .iter()
@@ -194,12 +200,67 @@ macro_rules! get_pixel_range {
                     .collect::<Vec<usize>>()
                     .iter()
                     .cloned()
-                    .map(|j| $img[get_2d_index!(j, i, $widthorheight)])
+                    .map(|j| $img[get_2d_index!(j, i, $width)])
                     .collect::<Vec<u8>>()
             })
             .flatten()
             .collect()
     }};
+}
+
+macro_rules! line_to {
+    ($img: ident, $fromx: ident, $fromy: ident, $tox: ident, $toy: ident, $width: ident, $color: ident, $eq: literal, $step: literal) => {{
+        let start = get_2d_index!($fromx, $fromy, $width);
+        let end = get_2d_index!($tox, $toy, $width);
+        (start..(end - $eq))
+            .step_by($step * $width + ($step ^ 1))
+            .into_iter()
+            .for_each(|i| $img[i] = $color);
+    }};
+    ($img: ident, $fromx: ident, $fromy: ident, $tox: ident, $toy: ident, $width: ident, $color: literal, $eq: literal, $step: literal) => {{
+        let start = get_2d_index!($fromx, $fromy, $width);
+        let end = get_2d_index!($tox, $toy, $width);
+        (start..(end - $eq))
+            .step_by($step * $width + ($step ^ 1))
+            .into_iter()
+            .for_each(|i| $img[i] = $color);
+    }};
+    ($img: ident, $fromx: expr, $fromy: expr, $tox: expr, $toy: expr, $width: ident, $color: ident, $eq: literal, $step: literal) => {{
+        let start = get_2d_index!($fromx, $fromy, $width);
+        let end = get_2d_index!($tox, $toy, $width);
+        (start..(end - $eq))
+            .step_by($step * $width + ($step ^ 1))
+            .into_iter()
+            .for_each(|i| $img[i] = $color);
+    }};
+    ($img: ident, $fromx: ident, $fromy: ident, $tox: expr, $toy: expr, $width: ident, $color: literal, $eq: literal, $step: literal) => {{
+        let start = get_2d_index!($fromx, $fromy, $width);
+        let end = get_2d_index!($tox, $toy, $width);
+        (start..(end - $eq))
+            .step_by($step * $width + ($step ^ 1))
+            .into_iter()
+            .for_each(|i| $img[i] = $color);
+    }};
+    ($img: ident, $fromx: expr, $fromy: expr, $tox: ident, $toy: ident, $width: ident, $color: ident, $eq: literal, $step: literal) => {{
+        let start = get_2d_index!($fromx, $fromy, $width);
+        let end = get_2d_index!($tox, $toy, $width);
+        (start..(end - $eq))
+            .step_by($step * $width + ($step ^ 1))
+            .into_iter()
+            .for_each(|i| $img[i] = $color);
+    }};
+    ($img: ident, $fromx: literal, $fromy: ident, $tox: literal, $toy: expr, $width: ident, $color: ident, $eq: literal, $step: literal) => {{
+        let start = get_2d_index!($fromx, $fromy, $width);
+        let end = get_2d_index!($tox, $toy, $width);
+        (start..(end - $eq))
+            .step_by($step * $width + ($step ^ 1))
+            .into_iter()
+            .for_each(|i| $img[i] = $color);
+    }};
+}
+
+macro_rules! chunk_to {
+    ($img: ident, $fromx: ident, $fromy: ident, $tox: ident, $toy: ident, $width: ident, $eq: literal, $step: literal) => {};
 }
 
 fn read_image(path: &str) -> (Vec<u8>, (usize, usize)) {
@@ -523,6 +584,25 @@ fn crop_image(
     return (cropped, (new_width, new_hight));
 }
 
+fn draw_grid(
+    img: &Vec<u8>,
+    width: usize,
+    height: usize,
+    grid_size: (usize, usize),
+    color: u8,
+) -> Vec<u8> {
+    let mut gridded = img.clone();
+    for i in (grid_size.0..height).step_by(grid_size.0) {
+        line_to!(gridded, 0, i, width, i, width, color, 0, 0);
+    }
+
+    for i in (grid_size.0..width).step_by(grid_size.1) {
+        line_to!(gridded, i, 0, i, height, width, color, 0, 1);
+    }
+
+    gridded
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let imagepath = &args[1];
@@ -535,14 +615,23 @@ fn main() {
 
     // let savepath  = &args[2];
 
-    let (image, (width, height)) = read_image(imagepath);
-    let grayscaled = rgba_buffer_to_grayscale(&image);
-    let binrarized = binarize_grayscale_buffer(&grayscaled);
-    let (nx, ny, tmin, tmax, sigma) = (width as usize, height as usize, 45, 50, 1.0);
-    let canny_edges = canny_edge_detector(&binrarized, nx, ny, tmin, tmax, sigma, true);
-    let (scaled, (nw, nh)) = scale_image(&canny_edges, width, height, 1.9);
-    println!("{} {}", nw, nh);
-    write_image("resized.png", nw, nh, &scaled);
-    let (cropped, (nww, nhh)) = crop_image(&scaled, nh, (200, 300), (500, 600));
-    write_image("cropped.png", nww, nhh, &cropped);
+    /*
+        let (image, (width, height)) = read_image(imagepath);
+        let grayscaled = rgba_buffer_to_grayscale(&image);
+        let binrarized = binarize_grayscale_buffer(&grayscaled);
+        let (nx, ny, tmin, tmax, sigma) = (width as usize, height as usize, 45, 50, 1.0);
+        let canny_edges = canny_edge_detector(&binrarized, nx, ny, tmin, tmax, sigma, true);
+        let (scaled, (nw, nh)) = scale_image(&canny_edges, width, height, 1.9);
+        write_image("resized.png", nw, nh, &scaled);
+        let (cropped, (nww, nhh)) = crop_image(&scaled, nh, (200, 300), (500, 600));
+        write_image("cropped.png", nww, nhh, &cropped);
+        let gridded = draw_square_grid(&binrarized, width, height, 40, HALF_BRIGHTNESS);
+        write_image("gridded.png", width, height, &gridded);
+        println!("{} {} {}", nw, nh, binrarized.len());
+    */
+    let width = 14;
+    let height = 21;
+    let white = vec![255u8; width * height];
+    let gridded = draw_grid(&white, width, height, (7, 7), 127);
+    write_image("gridded.png", width, height, &gridded);
 }
